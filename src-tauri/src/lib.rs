@@ -40,12 +40,40 @@ fn toggle_window<R: Runtime>(window: &WebviewWindow<R>) {
     if window.is_visible().unwrap_or(false) {
         let _ = window.hide();
     } else {
-        let (x, y) = get_cursor_position();
-        // Offset slightly so window doesn't appear directly under cursor
-        let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-            x: x - 10,
-            y: y - 10,
-        }));
+        let (cursor_x, cursor_y) = get_cursor_position();
+
+        // Get window size
+        let window_size = window.outer_size().unwrap_or(tauri::PhysicalSize {
+            width: 420,
+            height: 500,
+        });
+
+        // Get current monitor
+        if let Ok(Some(monitor)) = window.current_monitor() {
+            let monitor_size = monitor.size();
+            let monitor_pos = monitor.position();
+
+            // Calculate position so window appears near cursor but stays on screen
+            // Position window so cursor is near top-center of the window
+            let mut x = cursor_x - (window_size.width as i32 / 2);
+            let mut y = cursor_y - 20; // 20px below cursor
+
+            // Ensure window stays within monitor bounds
+            let max_x = monitor_pos.x + monitor_size.width as i32 - window_size.width as i32;
+            let max_y = monitor_pos.y + monitor_size.height as i32 - window_size.height as i32;
+
+            x = x.max(monitor_pos.x).min(max_x);
+            y = y.max(monitor_pos.y).min(max_y);
+
+            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }));
+        } else {
+            // Fallback if we can't get monitor info
+            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+                x: cursor_x - 210,
+                y: cursor_y - 250,
+            }));
+        }
+
         let _ = window.show();
         let _ = window.set_focus();
     }
@@ -102,7 +130,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             // Setup logging in debug mode
             if cfg!(debug_assertions) {
