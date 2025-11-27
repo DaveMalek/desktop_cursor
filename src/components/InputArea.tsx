@@ -11,15 +11,27 @@ interface InputAreaProps {
   ) => void;
   isLoading: boolean;
   disabled: boolean;
+  onClearChat: () => void;
+  onScreenshot: () => void;
+  pendingScreenshot: string | null;
+  onScreenshotConsumed: () => void;
 }
 
-export function InputArea({ onSend, isLoading, disabled }: InputAreaProps) {
+export function InputArea({ onSend, isLoading, disabled, onClearChat, onScreenshot, pendingScreenshot, onScreenshotConsumed }: InputAreaProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<AttachedImage[]>([]);
   const [files, setFiles] = useState<AttachedFile[]>([]);
   const [tables, setTables] = useState<AttachedTable[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add pending screenshot to images when it's available
+  useEffect(() => {
+    if (pendingScreenshot) {
+      setImages((prev) => [...prev, { dataUrl: pendingScreenshot }]);
+      onScreenshotConsumed();
+    }
+  }, [pendingScreenshot, onScreenshotConsumed]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -140,11 +152,12 @@ export function InputArea({ onSend, isLoading, disabled }: InputAreaProps) {
 
       {/* Action Buttons */}
       <div className="input-actions">
-        {/* Screenshot Button - placeholder for Phase 2 */}
+        {/* Screenshot Button */}
         <button
           className="action-btn"
-          title="Take screenshot (Coming soon)"
-          disabled={true}
+          title="Take screenshot"
+          onClick={onScreenshot}
+          disabled={disabled || isLoading}
         >
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
@@ -182,10 +195,11 @@ export function InputArea({ onSend, isLoading, disabled }: InputAreaProps) {
           </svg>
         </button>
 
-        {/* Clear Button - placeholder */}
+        {/* Clear Button */}
         <button
           className="action-btn"
           title="Clear chat"
+          onClick={onClearChat}
           disabled={disabled || isLoading}
         >
           <svg viewBox="0 0 24 24" fill="currentColor">

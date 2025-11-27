@@ -109,18 +109,69 @@ async fn save_api_keys(
     anthropic_key: Option<String>,
 ) -> Result<(), String> {
     use tauri_plugin_store::StoreExt;
-    
+
     let store = app.store("config.json").map_err(|e| e.to_string())?;
-    
+
     if let Some(key) = openai_key {
         store.set("openai_api_key", serde_json::json!(key));
     }
     if let Some(key) = anthropic_key {
         store.set("anthropic_api_key", serde_json::json!(key));
     }
-    
+
     store.save().map_err(|e| e.to_string())?;
     Ok(())
+}
+
+// Command to capture full screenshot
+#[tauri::command]
+async fn capture_screenshot() -> Result<String, String> {
+    use screenshots::Screen;
+    use image::ImageOutputFormat;
+    use std::io::Cursor;
+
+    // Get all screens
+    let screens = Screen::all().map_err(|e| format!("Failed to get screens: {}", e))?;
+
+    // Capture the primary screen (first screen)
+    let screen = screens.get(0).ok_or("No screens found")?;
+    let image = screen.capture().map_err(|e| format!("Failed to capture screen: {}", e))?;
+
+    // Convert to PNG and base64
+    let mut buffer = Cursor::new(Vec::new());
+    image
+        .write_to(&mut buffer, ImageOutputFormat::Png)
+        .map_err(|e| format!("Failed to encode image: {}", e))?;
+
+    let base64_img = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, buffer.into_inner());
+    Ok(format!("data:image/png;base64,{}", base64_img))
+}
+
+// Command to capture screenshot of specific area
+#[tauri::command]
+async fn capture_area_screenshot(x: i32, y: i32, width: u32, height: u32) -> Result<String, String> {
+    use screenshots::Screen;
+    use image::{ImageOutputFormat, GenericImageView};
+    use std::io::Cursor;
+
+    // Get all screens
+    let screens = Screen::all().map_err(|e| format!("Failed to get screens: {}", e))?;
+
+    // Find which screen contains the area
+    let screen = screens.get(0).ok_or("No screens found")?;
+    let full_image = screen.capture().map_err(|e| format!("Failed to capture screen: {}", e))?;
+
+    // Crop the image to the specified area
+    let cropped = full_image.view(x as u32, y as u32, width, height).to_image();
+
+    // Convert to PNG and base64
+    let mut buffer = Cursor::new(Vec::new());
+    cropped
+        .write_to(&mut buffer, ImageOutputFormat::Png)
+        .map_err(|e| format!("Failed to encode image: {}", e))?;
+
+    let base64_img = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, buffer.into_inner());
+    Ok(format!("data:image/png;base64,{}", base64_img))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -182,7 +233,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             hide_window,
             get_api_keys,
-            save_api_keys
+            save_api_keys,
+            capture_screenshot,
+            capture_area_screenshot
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

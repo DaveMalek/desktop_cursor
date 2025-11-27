@@ -1,0 +1,102 @@
+.screenshot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+}
+
+.screenshot-container {
+  flex: 1;
+  position: relative;
+  cursor: crosshair;
+  overflow: hidden;
+}
+
+.screenshot-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.selection-rect {
+  position: absolute;
+  border: 2px solid #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+.redaction-rect {
+  position: absolute;
+  background: black;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.redaction-preview {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px dashed white;
+}
+
+.screenshot-controls {
+  background: rgba(20, 20, 20, 0.95);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.screenshot-instructions {
+  color: #ffffff;
+  font-size: 14px;
+  text-align: center;
+}
+
+.screenshot-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.screenshot-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.screenshot-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.screenshot-btn:active {
+  transform: scale(0.98);
+}
+
+.screenshot-btn.confirm-btn {
+  background: rgba(0, 200, 0, 0.3);
+  border-color: rgba(0, 255, 0, 0.5);
+}
+
+.screenshot-btn.confirm-btn:hover {
+  background: rgba(0, 200, 0, 0.4);
+  border-color: rgba(0, 255, 0, 0.7);
+}
+
+.screenshot-btn.cancel-btn {
+  background: rgba(200, 0, 0, 0.3);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+
+.screenshot-btn.cancel-btn:hover {
+  background: rgba(200, 0, 0, 0.4);
+  border-color: rgba(255, 0, 0, 0.7);
+}

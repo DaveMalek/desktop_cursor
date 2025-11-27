@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { InputArea } from './components/InputArea';
 import { ResponseArea } from './components/ResponseArea';
 import { SetupScreen } from './components/SetupScreen';
+import { ScreenshotOverlay } from './components/ScreenshotOverlay';
 import { useStore } from './hooks/useStore';
 import { useAI } from './hooks/useAI';
 import { Message, AttachedImage, AttachedFile, AttachedTable, MessageContent } from './types';
@@ -9,10 +10,12 @@ import { Message, AttachedImage, AttachedFile, AttachedTable, MessageContent } f
 function App() {
   const { hasValidApiKey, getCurrentApiKey, saveApiKey, provider, isLoading: isStoreLoading } = useStore();
   const { sendMessage, isLoading: isAILoading, error: aiError } = useAI();
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentResponse, setCurrentResponse] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [showScreenshotOverlay, setShowScreenshotOverlay] = useState(false);
+  const [pendingScreenshot, setPendingScreenshot] = useState<string | null>(null);
 
   const handleSend = useCallback(
     async (
@@ -92,6 +95,29 @@ function App() {
     [messages, provider, getCurrentApiKey, sendMessage]
   );
 
+  const handleClearChat = useCallback(() => {
+    setMessages([]);
+    setCurrentResponse(null);
+    setLocalError(null);
+  }, []);
+
+  const handleScreenshot = useCallback(() => {
+    setShowScreenshotOverlay(true);
+  }, []);
+
+  const handleScreenshotCapture = useCallback((dataUrl: string) => {
+    setPendingScreenshot(dataUrl);
+    setShowScreenshotOverlay(false);
+  }, []);
+
+  const handleScreenshotCancel = useCallback(() => {
+    setShowScreenshotOverlay(false);
+  }, []);
+
+  const handleScreenshotConsumed = useCallback(() => {
+    setPendingScreenshot(null);
+  }, []);
+
   // Show loading state while store initializes
   if (isStoreLoading) {
     return (
@@ -117,10 +143,20 @@ function App() {
   // Main chat interface
   return (
     <div className="app-container">
+      {showScreenshotOverlay && (
+        <ScreenshotOverlay
+          onCapture={handleScreenshotCapture}
+          onCancel={handleScreenshotCancel}
+        />
+      )}
       <InputArea
         onSend={handleSend}
         isLoading={isAILoading}
         disabled={false}
+        onClearChat={handleClearChat}
+        onScreenshot={handleScreenshot}
+        pendingScreenshot={pendingScreenshot}
+        onScreenshotConsumed={handleScreenshotConsumed}
       />
       <ResponseArea
         response={currentResponse}
