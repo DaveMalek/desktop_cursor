@@ -127,7 +127,8 @@ async fn save_api_keys(
 #[tauri::command]
 async fn capture_screenshot() -> Result<String, String> {
     use screenshots::Screen;
-    use image::ImageOutputFormat;
+    use image::codecs::png::PngEncoder;
+    use image::ImageEncoder;
     use std::io::Cursor;
 
     // Get all screens
@@ -139,8 +140,14 @@ async fn capture_screenshot() -> Result<String, String> {
 
     // Convert to PNG and base64
     let mut buffer = Cursor::new(Vec::new());
-    image
-        .write_to(&mut buffer, ImageOutputFormat::Png)
+    let encoder = PngEncoder::new(&mut buffer);
+    encoder
+        .write_image(
+            image.as_raw(),
+            image.width(),
+            image.height(),
+            image::ColorType::Rgba8,
+        )
         .map_err(|e| format!("Failed to encode image: {}", e))?;
 
     let base64_img = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, buffer.into_inner());
@@ -151,7 +158,8 @@ async fn capture_screenshot() -> Result<String, String> {
 #[tauri::command]
 async fn capture_area_screenshot(x: i32, y: i32, width: u32, height: u32) -> Result<String, String> {
     use screenshots::Screen;
-    use image::{ImageOutputFormat, GenericImageView};
+    use image::codecs::png::PngEncoder;
+    use image::{ImageEncoder, GenericImageView, imageops};
     use std::io::Cursor;
 
     // Get all screens
@@ -162,12 +170,18 @@ async fn capture_area_screenshot(x: i32, y: i32, width: u32, height: u32) -> Res
     let full_image = screen.capture().map_err(|e| format!("Failed to capture screen: {}", e))?;
 
     // Crop the image to the specified area
-    let cropped = full_image.view(x as u32, y as u32, width, height).to_image();
+    let cropped = imageops::crop_imm(&full_image, x as u32, y as u32, width, height).to_image();
 
     // Convert to PNG and base64
     let mut buffer = Cursor::new(Vec::new());
-    cropped
-        .write_to(&mut buffer, ImageOutputFormat::Png)
+    let encoder = PngEncoder::new(&mut buffer);
+    encoder
+        .write_image(
+            cropped.as_raw(),
+            cropped.width(),
+            cropped.height(),
+            image::ColorType::Rgba8,
+        )
         .map_err(|e| format!("Failed to encode image: {}", e))?;
 
     let base64_img = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, buffer.into_inner());
